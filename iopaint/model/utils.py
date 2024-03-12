@@ -1,6 +1,5 @@
 import gc
 import math
-import random
 import traceback
 from typing import Any
 
@@ -27,6 +26,7 @@ from loguru import logger
 
 from iopaint.schema import SDSampler
 from torch import conv2d, conv_transpose2d
+import secrets
 
 
 def make_beta_schedule(
@@ -925,7 +925,7 @@ def torch_gc():
 
 
 def set_seed(seed: int):
-    random.seed(seed)
+    secrets.SystemRandom().seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
