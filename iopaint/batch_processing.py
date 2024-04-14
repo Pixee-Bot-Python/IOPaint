@@ -46,7 +46,7 @@ def batch_inpaint(
 ):
     if image.is_dir() and output.is_file():
         logger.error(
-            f"invalid --output: when image is a directory, output should be a directory"
+            "invalid --output: when image is a directory, output should be a directory"
         )
         exit(-1)
     output.mkdir(parents=True, exist_ok=True)
@@ -54,10 +54,10 @@ def batch_inpaint(
     image_paths = glob_images(image)
     mask_paths = glob_images(mask)
     if len(image_paths) == 0:
-        logger.error(f"invalid --image: empty image folder")
+        logger.error("invalid --image: empty image folder")
         exit(-1)
     if len(mask_paths) == 0:
-        logger.error(f"invalid --mask: empty mask folder")
+        logger.error("invalid --mask: empty mask folder")
         exit(-1)
 
     if config is None:

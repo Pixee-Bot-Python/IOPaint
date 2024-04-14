@@ -146,7 +146,7 @@ def start(
         logger.error(f"invalid --input: {input} not exists")
         exit(-1)
     if input and input.is_dir() and not output_dir:
-        logger.error(f"invalid --output-dir: must be set when --input is a directory")
+        logger.error("invalid --output-dir: must be set when --input is a directory")
         exit(-1)
     if output_dir:
         output_dir = output_dir.expanduser().absolute()

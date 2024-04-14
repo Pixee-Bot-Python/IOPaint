@@ -151,7 +151,7 @@ class DDPM(torch.nn.Module):
             if reset_ema:
                 assert self.use_ema
                 print(
-                    f"Resetting ema to pure model weights. This is useful when restoring from an ema-only checkpoint."
+                    "Resetting ema to pure model weights. This is useful when restoring from an ema-only checkpoint."
                 )
                 self.model_ema = LitEma(self.model)
         if reset_num_ema_updates:
@@ -728,7 +728,7 @@ class LatentDiffusion(DDPM):
             if reset_ema:
                 assert self.use_ema
                 print(
-                    f"Resetting ema to pure model weights. This is useful when restoring from an ema-only checkpoint."
+                    "Resetting ema to pure model weights. This is useful when restoring from an ema-only checkpoint."
                 )
                 self.model_ema = LitEma(self.model)
         if reset_num_ema_updates:

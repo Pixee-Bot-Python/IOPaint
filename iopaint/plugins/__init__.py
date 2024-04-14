@@ -58,7 +58,7 @@ def build_plugins(
             logger.info("Use realesrgan as GFPGAN background upscaler")
         else:
             logger.info(
-                f"GFPGAN no background upscaler, use --enable-realesrgan to enable it"
+                "GFPGAN no background upscaler, use --enable-realesrgan to enable it"
             )
         plugins[GFPGANPlugin.name] = GFPGANPlugin(
             gfpgan_device,

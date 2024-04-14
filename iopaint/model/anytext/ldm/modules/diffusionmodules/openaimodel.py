@@ -508,8 +508,8 @@ class UNetModel(nn.Module):
             assert all(map(lambda i: self.num_res_blocks[i] >= num_attention_blocks[i], range(len(num_attention_blocks))))
             print(f"Constructor of UNetModel received num_attention_blocks={num_attention_blocks}. "
                   f"This option has LESS priority than attention_resolutions {attention_resolutions}, "
-                  f"i.e., in cases where num_attention_blocks[i] > 0 but 2**i not in attention_resolutions, "
-                  f"attention will still not be set.")
+                  "i.e., in cases where num_attention_blocks[i] > 0 but 2**i not in attention_resolutions, "
+                  "attention will still not be set.")
         self.use_fp16 = use_fp16
         self.attention_resolutions = attention_resolutions
         self.dropout = dropout

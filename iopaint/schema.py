@@ -393,7 +393,7 @@ class InpaintRequest(BaseModel):
         use_extender = values.data["use_extender"]
         enable_controlnet = values.data["enable_controlnet"]
         if use_extender and enable_controlnet:
-            logger.info(f"Extender is enabled, set controlnet_conditioning_scale=0")
+            logger.info("Extender is enabled, set controlnet_conditioning_scale=0")
             return 0
         return v
 
@@ -402,7 +402,7 @@ class InpaintRequest(BaseModel):
     def validate_sd_strength(cls, v: float, values):
         use_extender = values.data["use_extender"]
         if use_extender:
-            logger.info(f"Extender is enabled, set sd_strength=1")
+            logger.info("Extender is enabled, set sd_strength=1")
             return 1.0
         return v
 
