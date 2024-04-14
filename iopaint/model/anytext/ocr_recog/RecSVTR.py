@@ -378,14 +378,14 @@ class SubSample(nn.Module):
 class SVTRNet(nn.Module):
     def __init__(
             self,
-            img_size=[48, 100],
+            img_size=None,
             in_channels=3,
-            embed_dim=[64, 128, 256],
-            depth=[3, 6, 3],
-            num_heads=[2, 4, 8],
+            embed_dim=None,
+            depth=None,
+            num_heads=None,
             mixer=['Local'] * 6 + ['Global'] *
             6,  # Local atten, Global atten, Conv
-            local_mixer=[[7, 11], [7, 11], [7, 11]],
+            local_mixer=None,
             patch_merging='Conv',  # Conv, Pool, None
             mlp_ratio=4,
             qkv_bias=True,
@@ -406,6 +406,11 @@ class SVTRNet(nn.Module):
             prenorm=True,
             use_lenhead=False,
             **kwargs):
+        img_size = [48, 100] if img_size is None else img_size
+        embed_dim = [64, 128, 256] if embed_dim is None else embed_dim
+        depth = [3, 6, 3] if depth is None else depth
+        num_heads = [2, 4, 8] if num_heads is None else num_heads
+        local_mixer = [[7, 11], [7, 11], [7, 11]] if local_mixer is None else local_mixer
         super().__init__()
         self.img_size = img_size
         self.embed_dim = embed_dim

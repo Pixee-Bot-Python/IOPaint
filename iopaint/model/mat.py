@@ -41,14 +41,15 @@ class ModulatedConv2d(nn.Module):
         demodulate=True,  # perfrom demodulation
         up=1,  # Integer upsampling factor.
         down=1,  # Integer downsampling factor.
-        resample_filter=[
-            1,
-            3,
-            3,
-            1,
-        ],  # Low-pass filter to apply when resampling activations.
+        resample_filter=None,  # Low-pass filter to apply when resampling activations.
         conv_clamp=None,  # Clamp the output to +-X, None = disable clamping.
     ):
+        resample_filter = [
+                1,
+                3,
+                3,
+                1,
+            ] if resample_filter is None else resample_filter
         super().__init__()
         self.demodulate = demodulate
 
@@ -104,15 +105,16 @@ class StyleConv(torch.nn.Module):
         up=1,  # Integer upsampling factor.
         use_noise=False,  # Enable noise input?
         activation="lrelu",  # Activation function: 'relu', 'lrelu', etc.
-        resample_filter=[
-            1,
-            3,
-            3,
-            1,
-        ],  # Low-pass filter to apply when resampling activations.
+        resample_filter=None,  # Low-pass filter to apply when resampling activations.
         conv_clamp=None,  # Clamp the output of convolution layers to +-X, None = disable clamping.
         demodulate=True,  # perform demodulation
     ):
+        resample_filter = [
+                1,
+                3,
+                3,
+                1,
+            ] if resample_filter is None else resample_filter
         super().__init__()
 
         self.conv = ModulatedConv2d(
@@ -169,10 +171,11 @@ class ToRGB(torch.nn.Module):
         out_channels,
         style_dim,
         kernel_size=1,
-        resample_filter=[1, 3, 3, 1],
+        resample_filter=None,
         conv_clamp=None,
         demodulate=False,
     ):
+        resample_filter = [1, 3, 3, 1] if resample_filter is None else resample_filter
         super().__init__()
 
         self.conv = ModulatedConv2d(
@@ -640,15 +643,16 @@ class Conv2dLayerPartial(nn.Module):
         activation="linear",  # Activation function: 'relu', 'lrelu', etc.
         up=1,  # Integer upsampling factor.
         down=1,  # Integer downsampling factor.
-        resample_filter=[
-            1,
-            3,
-            3,
-            1,
-        ],  # Low-pass filter to apply when resampling activations.
+        resample_filter=None,  # Low-pass filter to apply when resampling activations.
         conv_clamp=None,  # Clamp the output to +-X, None = disable clamping.
         trainable=True,  # Update the weights of this layer during training?
     ):
+        resample_filter = [
+                1,
+                3,
+                3,
+                1,
+            ] if resample_filter is None else resample_filter
         super().__init__()
         self.conv = Conv2dLayer(
             in_channels,
@@ -1719,9 +1723,11 @@ class Generator(nn.Module):
         w_dim,  # Intermediate latent (W) dimensionality.
         img_resolution,  # resolution of generated image
         img_channels,  # Number of input color channels.
-        synthesis_kwargs={},  # Arguments for SynthesisNetwork.
-        mapping_kwargs={},  # Arguments for MappingNetwork.
+        synthesis_kwargs=None,  # Arguments for SynthesisNetwork.
+        mapping_kwargs=None,  # Arguments for MappingNetwork.
     ):
+        synthesis_kwargs = {} if synthesis_kwargs is None else synthesis_kwargs
+        mapping_kwargs = {} if mapping_kwargs is None else mapping_kwargs
         super().__init__()
         self.z_dim = z_dim
         self.c_dim = c_dim

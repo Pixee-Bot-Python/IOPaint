@@ -8,7 +8,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from typing import Any, Dict, List, Tuple
+from typing import Optional, Any, Dict, List, Tuple
 
 from .image_encoder import ImageEncoderViT
 from .mask_decoder import MaskDecoder
@@ -24,8 +24,8 @@ class Sam(nn.Module):
         image_encoder: ImageEncoderViT,
         prompt_encoder: PromptEncoder,
         mask_decoder: MaskDecoder,
-        pixel_mean: List[float] = [123.675, 116.28, 103.53],
-        pixel_std: List[float] = [58.395, 57.12, 57.375],
+        pixel_mean: Optional[List[float]] = None,
+        pixel_std: Optional[List[float]] = None,
     ) -> None:
         """
         SAM predicts object masks from an image and input prompts.
@@ -39,6 +39,8 @@ class Sam(nn.Module):
           pixel_mean (list(float)): Mean values for normalizing pixels in the input image.
           pixel_std (list(float)): Std values for normalizing pixels in the input image.
         """
+        pixel_mean = [123.675, 116.28, 103.53] if pixel_mean is None else pixel_mean
+        pixel_std = [58.395, 57.12, 57.375] if pixel_std is None else pixel_std
         super().__init__()
         self.image_encoder = image_encoder
         self.prompt_encoder = prompt_encoder

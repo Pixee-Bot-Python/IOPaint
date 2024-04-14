@@ -170,17 +170,18 @@ class EncoderBlock(torch.nn.Module):
         first_layer_idx,  # Index of the first layer.
         architecture="skip",  # Architecture: 'orig', 'skip', 'resnet'.
         activation="lrelu",  # Activation function: 'relu', 'lrelu', etc.
-        resample_filter=[
-            1,
-            3,
-            3,
-            1,
-        ],  # Low-pass filter to apply when resampling activations.
+        resample_filter=None,  # Low-pass filter to apply when resampling activations.
         conv_clamp=None,  # Clamp the output of convolution layers to +-X, None = disable clamping.
         use_fp16=False,  # Use FP16 for this block?
         fp16_channels_last=False,  # Use channels-last memory format with FP16?
         freeze_layers=0,  # Freeze-D: Number of layers to freeze.
     ):
+        resample_filter = [
+                1,
+                3,
+                3,
+                1,
+            ] if resample_filter is None else resample_filter
         assert in_channels in [0, tmp_channels]
         assert architecture in ["orig", "skip", "resnet"]
         super().__init__()
@@ -302,10 +303,13 @@ class EncoderNetwork(torch.nn.Module):
         num_fp16_res=0,  # Use FP16 for the N highest resolutions.
         conv_clamp=None,  # Clamp the output of convolution layers to +-X, None = disable clamping.
         cmap_dim=None,  # Dimensionality of mapped conditioning label, None = default.
-        block_kwargs={},  # Arguments for DiscriminatorBlock.
-        mapping_kwargs={},  # Arguments for MappingNetwork.
-        epilogue_kwargs={},  # Arguments for EncoderEpilogue.
+        block_kwargs=None,  # Arguments for DiscriminatorBlock.
+        mapping_kwargs=None,  # Arguments for MappingNetwork.
+        epilogue_kwargs=None,  # Arguments for EncoderEpilogue.
     ):
+        block_kwargs = {} if block_kwargs is None else block_kwargs
+        mapping_kwargs = {} if mapping_kwargs is None else mapping_kwargs
+        epilogue_kwargs = {} if epilogue_kwargs is None else epilogue_kwargs
         super().__init__()
         self.c_dim = c_dim
         self.z_dim = z_dim
@@ -524,15 +528,16 @@ class SynthesisLayer(torch.nn.Module):
         up=1,  # Integer upsampling factor.
         use_noise=True,  # Enable noise input?
         activation="lrelu",  # Activation function: 'relu', 'lrelu', etc.
-        resample_filter=[
-            1,
-            3,
-            3,
-            1,
-        ],  # Low-pass filter to apply when resampling activations.
+        resample_filter=None,  # Low-pass filter to apply when resampling activations.
         conv_clamp=None,  # Clamp the output of convolution layers to +-X, None = disable clamping.
         channels_last=False,  # Use channels_last format for the weights?
     ):
+        resample_filter = [
+                1,
+                3,
+                3,
+                1,
+            ] if resample_filter is None else resample_filter
         super().__init__()
         self.resolution = resolution
         self.up = up
@@ -1211,17 +1216,18 @@ class SynthesisBlock(torch.nn.Module):
         img_channels,  # Number of output color channels.
         is_last,  # Is this the last block?
         architecture="skip",  # Architecture: 'orig', 'skip', 'resnet'.
-        resample_filter=[
-            1,
-            3,
-            3,
-            1,
-        ],  # Low-pass filter to apply when resampling activations.
+        resample_filter=None,  # Low-pass filter to apply when resampling activations.
         conv_clamp=None,  # Clamp the output of convolution layers to +-X, None = disable clamping.
         use_fp16=False,  # Use FP16 for this block?
         fp16_channels_last=False,  # Use channels-last memory format with FP16?
         **layer_kwargs,  # Arguments for SynthesisLayer.
     ):
+        resample_filter = [
+                1,
+                3,
+                3,
+                1,
+            ] if resample_filter is None else resample_filter
         assert architecture in ["orig", "skip", "resnet"]
         super().__init__()
         self.in_channels = in_channels
@@ -1567,10 +1573,13 @@ class Generator(torch.nn.Module):
         w_dim,  # Intermediate latent (W) dimensionality.
         img_resolution,  # Output resolution.
         img_channels,  # Number of output color channels.
-        encoder_kwargs={},  # Arguments for EncoderNetwork.
-        mapping_kwargs={},  # Arguments for MappingNetwork.
-        synthesis_kwargs={},  # Arguments for SynthesisNetwork.
+        encoder_kwargs=None,  # Arguments for EncoderNetwork.
+        mapping_kwargs=None,  # Arguments for MappingNetwork.
+        synthesis_kwargs=None,  # Arguments for SynthesisNetwork.
     ):
+        encoder_kwargs = {} if encoder_kwargs is None else encoder_kwargs
+        mapping_kwargs = {} if mapping_kwargs is None else mapping_kwargs
+        synthesis_kwargs = {} if synthesis_kwargs is None else synthesis_kwargs
         super().__init__()
         self.z_dim = z_dim
         self.c_dim = c_dim

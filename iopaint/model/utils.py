@@ -861,16 +861,17 @@ class Conv2dLayer(torch.nn.Module):
         activation="linear",  # Activation function: 'relu', 'lrelu', etc.
         up=1,  # Integer upsampling factor.
         down=1,  # Integer downsampling factor.
-        resample_filter=[
-            1,
-            3,
-            3,
-            1,
-        ],  # Low-pass filter to apply when resampling activations.
+        resample_filter=None,  # Low-pass filter to apply when resampling activations.
         conv_clamp=None,  # Clamp the output to +-X, None = disable clamping.
         channels_last=False,  # Expect the input to have memory_format=channels_last?
         trainable=True,  # Update the weights of this layer during training?
     ):
+        resample_filter = [
+                1,
+                3,
+                3,
+                1,
+            ] if resample_filter is None else resample_filter
         super().__init__()
         self.activation = activation
         self.up = up
@@ -983,11 +984,7 @@ def handle_from_pretrained_exceptions(func, **kwargs):
     except ValueError as e:
         if "You are trying to load the model files of the `variant=fp16`" in str(e):
             logger.info("variant=fp16 not found, try revision=fp16")
-            try:
-                return func(**{**kwargs, "variant": None, "revision": "fp16"})
-            except Exception as e:
-                logger.info("revision=fp16 not found, try revision=main")
-                return func(**{**kwargs, "variant": None, "revision": "main"})
+            return func(**{**kwargs, "variant": None, "revision": "fp16"})
         raise e
     except OSError as e:
         previous_traceback = traceback.format_exc()

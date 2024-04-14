@@ -43,10 +43,7 @@ def get_cache_path_by_url(url):
 
 
 def download_model(url, model_md5: str = None):
-    if os.path.exists(url):
-        cached_file = url
-    else:
-        cached_file = get_cache_path_by_url(url)
+    cached_file = get_cache_path_by_url(url)
     if not os.path.exists(cached_file):
         sys.stderr.write('Downloading: "{}" to {}\n'.format(url, cached_file))
         hash_prefix = None
@@ -140,7 +137,8 @@ def numpy_to_bytes(image_numpy: np.ndarray, ext: str) -> bytes:
     return image_bytes
 
 
-def pil_to_bytes(pil_img, ext: str, quality: int = 95, infos={}) -> bytes:
+def pil_to_bytes(pil_img, ext: str, quality: int = 95, infos=None) -> bytes:
+    infos = {} if infos is None else infos
     with io.BytesIO() as output:
         kwargs = {k: v for k, v in infos.items() if v is not None}
         if ext == "jpg":

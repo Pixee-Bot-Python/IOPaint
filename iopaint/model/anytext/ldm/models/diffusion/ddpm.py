@@ -80,7 +80,7 @@ class DDPM(torch.nn.Module):
         beta_schedule="linear",
         loss_type="l2",
         ckpt_path=None,
-        ignore_keys=[],
+        ignore_keys=None,
         load_only_unet=False,
         monitor="val/loss",
         use_ema=True,
@@ -107,6 +107,7 @@ class DDPM(torch.nn.Module):
         reset_ema=False,
         reset_num_ema_updates=False,
     ):
+        ignore_keys = [] if ignore_keys is None else ignore_keys
         super().__init__()
         assert parameterization in [
             "eps",
@@ -303,7 +304,8 @@ class DDPM(torch.nn.Module):
                     print(f"{context}: Restored training weights")
 
     @torch.no_grad()
-    def init_from_ckpt(self, path, ignore_keys=list(), only_model=False):
+    def init_from_ckpt(self, path, ignore_keys=None, only_model=False):
+        ignore_keys = [] if ignore_keys is None else ignore_keys
         sd = torch.load(path, map_location="cpu")
         if "state_dict" in list(sd.keys()):
             sd = sd["state_dict"]
@@ -2005,7 +2007,8 @@ class LatentFinetuneDiffusion(LatentDiffusion):
         if exists(ckpt_path):
             self.init_from_ckpt(ckpt_path, ignore_keys)
 
-    def init_from_ckpt(self, path, ignore_keys=list(), only_model=False):
+    def init_from_ckpt(self, path, ignore_keys=None, only_model=False):
+        ignore_keys = [] if ignore_keys is None else ignore_keys
         sd = torch.load(path, map_location="cpu")
         if "state_dict" in list(sd.keys()):
             sd = sd["state_dict"]

@@ -652,10 +652,10 @@ class TinyViT(nn.Module):
         img_size=224,
         in_chans=3,
         num_classes=1000,
-        embed_dims=[96, 192, 384, 768],
-        depths=[2, 2, 6, 2],
-        num_heads=[3, 6, 12, 24],
-        window_sizes=[7, 7, 14, 7],
+        embed_dims=None,
+        depths=None,
+        num_heads=None,
+        window_sizes=None,
         mlp_ratio=4.0,
         drop_rate=0.0,
         drop_path_rate=0.1,
@@ -664,6 +664,10 @@ class TinyViT(nn.Module):
         local_conv_size=3,
         layer_lr_decay=1.0,
     ):
+        embed_dims = [96, 192, 384, 768] if embed_dims is None else embed_dims
+        depths = [2, 2, 6, 2] if depths is None else depths
+        num_heads = [3, 6, 12, 24] if num_heads is None else num_heads
+        window_sizes = [7, 7, 14, 7] if window_sizes is None else window_sizes
         super().__init__()
         self.img_size = img_size
         self.num_classes = num_classes

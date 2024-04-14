@@ -15,13 +15,14 @@ class AutoencoderKL(torch.nn.Module):
                  lossconfig,
                  embed_dim,
                  ckpt_path=None,
-                 ignore_keys=[],
+                 ignore_keys=None,
                  image_key="image",
                  colorize_nlabels=None,
                  monitor=None,
                  ema_decay=None,
                  learn_logvar=False
                  ):
+        ignore_keys = [] if ignore_keys is None else ignore_keys
         super().__init__()
         self.learn_logvar = learn_logvar
         self.image_key = image_key
@@ -48,7 +49,8 @@ class AutoencoderKL(torch.nn.Module):
         if ckpt_path is not None:
             self.init_from_ckpt(ckpt_path, ignore_keys=ignore_keys)
 
-    def init_from_ckpt(self, path, ignore_keys=list()):
+    def init_from_ckpt(self, path, ignore_keys=None):
+        ignore_keys = [] if ignore_keys is None else ignore_keys
         sd = torch.load(path, map_location="cpu")["state_dict"]
         keys = list(sd.keys())
         for k in keys:
