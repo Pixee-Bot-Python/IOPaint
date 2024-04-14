@@ -13,7 +13,7 @@ from iopaint.helper import (
     switch_mps_device,
 )
 from iopaint.schema import InpaintRequest, HDStrategy, SDSampler
-from .helper.g_diffuser_bot import expand_image
+from .helper.g_diffuser_bot import expand_image, expand_image2
 from .utils import get_scheduler
 
 
@@ -327,7 +327,7 @@ class DiffusionInpaintModel(InpaintModel):
         padding_r = max(0, cropper_r - image_r)
         padding_b = max(0, cropper_b - image_b)
 
-        expanded_image, mask_image = expand_image(
+        expanded_image, mask_image = expand_image2(
             cropped_image,
             left=padding_l,
             top=padding_t,
@@ -395,7 +395,7 @@ class DiffusionInpaintModel(InpaintModel):
     def set_scheduler(self, config: InpaintRequest):
         scheduler_config = self.model.scheduler.config
         sd_sampler = config.sd_sampler
-        if config.sd_lcm_lora:
+        if config.sd_lcm_lora and self.model_info.support_lcm_lora:
             sd_sampler = SDSampler.lcm
             logger.info(f"LCM Lora enabled, use {sd_sampler} sampler")
         scheduler = get_scheduler(sd_sampler, scheduler_config)
@@ -404,7 +404,7 @@ class DiffusionInpaintModel(InpaintModel):
     def forward_pre_process(self, image, mask, config):
         if config.sd_mask_blur != 0:
             k = 2 * config.sd_mask_blur + 1
-            mask = cv2.GaussianBlur(mask, (k, k), 0)[:, :, np.newaxis]
+            mask = cv2.GaussianBlur(mask, (k, k), 0)
 
         return image, mask
 
@@ -412,7 +412,7 @@ class DiffusionInpaintModel(InpaintModel):
         if config.sd_match_histograms:
             result = self._match_histograms(result, image[:, :, ::-1], mask)
 
-        if config.sd_mask_blur != 0:
-            k = 2 * config.sd_mask_blur + 1
-            mask = cv2.GaussianBlur(mask, (k, k), 0)
+        # if config.sd_mask_blur != 0:
+        #     k = 2 * config.sd_mask_blur + 1
+        #     mask = cv2.GaussianBlur(mask, (k, k), 0)
         return result, image, mask

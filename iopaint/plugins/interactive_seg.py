@@ -1,8 +1,6 @@
 import hashlib
-import json
 from typing import List
 
-import cv2
 import numpy as np
 import torch
 from loguru import logger
@@ -10,6 +8,7 @@ from loguru import logger
 from iopaint.helper import download_model
 from iopaint.plugins.base_plugin import BasePlugin
 from iopaint.plugins.segment_anything import SamPredictor, sam_model_registry
+from iopaint.plugins.segment_anything.predictor_hq import SamHQPredictor
 from iopaint.schema import RunPluginRequest
 
 # 从小到大
@@ -30,6 +29,18 @@ SEGMENT_ANYTHING_MODELS = {
         "url": "https://github.com/Sanster/models/releases/download/MobileSAM/mobile_sam.pt",
         "md5": "f3c0d8cda613564d499310dab6c812cd",
     },
+    "sam_hq_vit_b": {
+        "url": "https://huggingface.co/lkeab/hq-sam/resolve/main/sam_hq_vit_b.pth",
+        "md5": "c6b8953247bcfdc8bb8ef91e36a6cacc",
+    },
+    "sam_hq_vit_l": {
+        "url": "https://huggingface.co/lkeab/hq-sam/resolve/main/sam_hq_vit_l.pth",
+        "md5": "08947267966e4264fb39523eccc33f86",
+    },
+    "sam_hq_vit_h": {
+        "url": "https://huggingface.co/lkeab/hq-sam/resolve/main/sam_hq_vit_h.pth",
+        "md5": "3560f6b6a5a6edacd814a1325c39640a",
+    },
 }
 
 
@@ -39,15 +50,35 @@ class InteractiveSeg(BasePlugin):
 
     def __init__(self, model_name, device):
         super().__init__()
+        self.model_name = model_name
+        self.device = device
+        self._init_session(model_name)
+
+    def _init_session(self, model_name: str):
         model_path = download_model(
             SEGMENT_ANYTHING_MODELS[model_name]["url"],
             SEGMENT_ANYTHING_MODELS[model_name]["md5"],
         )
         logger.info(f"SegmentAnything model path: {model_path}")
-        self.predictor = SamPredictor(
-            sam_model_registry[model_name](checkpoint=model_path).to(device)
-        )
+        if "sam_hq" in model_name:
+            self.predictor = SamHQPredictor(
+                sam_model_registry[model_name](checkpoint=model_path).to(self.device)
+            )
+        else:
+            self.predictor = SamPredictor(
+                sam_model_registry[model_name](checkpoint=model_path).to(self.device)
+            )
         self.prev_img_md5 = None
+
+    def switch_model(self, new_model_name):
+        if self.model_name == new_model_name:
+            return
+
+        logger.info(
+            f"Switching InteractiveSeg model from {self.model_name} to {new_model_name}"
+        )
+        self._init_session(new_model_name)
+        self.model_name = new_model_name
 
     def gen_mask(self, rgb_np_img, req: RunPluginRequest) -> np.ndarray:
         img_md5 = hashlib.md5(req.image.encode("utf-8")).hexdigest()

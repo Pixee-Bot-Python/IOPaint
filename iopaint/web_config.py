@@ -1,13 +1,64 @@
+import json
+import os
+from pathlib import Path
+
+import mimetypes
+# fix for windows mimetypes registry entries being borked
+# see https://github.com/invoke-ai/InvokeAI/discussions/3684#discussioncomment-6391352
+mimetypes.add_type('application/javascript', '.js')
+mimetypes.add_type('text/css', '.css')
+
+from iopaint.schema import (
+    Device,
+    InteractiveSegModel,
+    RemoveBGModel,
+    RealESRGANModel,
+    ApiConfig,
+)
+
+os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
+
 from datetime import datetime
 from json import JSONDecodeError
 
 import gradio as gr
+from iopaint.download import scan_models
 from loguru import logger
 
 from iopaint.const import *
 
-
 _config_file: Path = None
+
+default_configs = dict(
+    host="127.0.0.1",
+    port=8080,
+    inbrowser=True,
+    model=DEFAULT_MODEL,
+    model_dir=DEFAULT_MODEL_DIR,
+    no_half=False,
+    low_mem=False,
+    cpu_offload=False,
+    disable_nsfw_checker=False,
+    local_files_only=False,
+    cpu_textencoder=False,
+    device=Device.cuda,
+    input=None,
+    output_dir=None,
+    quality=95,
+    enable_interactive_seg=False,
+    interactive_seg_model=InteractiveSegModel.vit_b,
+    interactive_seg_device=Device.cpu,
+    enable_remove_bg=False,
+    remove_bg_model=RemoveBGModel.briaai_rmbg_1_4,
+    enable_anime_seg=False,
+    enable_realesrgan=False,
+    realesrgan_device=Device.cpu,
+    realesrgan_model=RealESRGANModel.realesr_general_x4v3,
+    enable_gfpgan=False,
+    gfpgan_device=Device.cpu,
+    enable_restoreformer=False,
+    restoreformer_device=Device.cpu,
+)
 
 
 class WebConfig(ApiConfig):
@@ -20,46 +71,48 @@ def load_config(p: Path) -> WebConfig:
             try:
                 return WebConfig(**{**default_configs, **json.load(f)})
             except JSONDecodeError:
-                print(f"Load config file failed, using default configs")
+                print("Load config file failed, using default configs")
                 return WebConfig(**default_configs)
     else:
         return WebConfig(**default_configs)
 
 
 def save_config(
-    host,
-    port,
-    model,
-    model_dir,
-    no_half,
-    low_mem,
-    cpu_offload,
-    disable_nsfw_checker,
-    local_files_only,
-    cpu_textencoder,
-    device,
-    input,
-    output_dir,
-    quality,
-    enable_interactive_seg,
-    interactive_seg_model,
-    interactive_seg_device,
-    enable_remove_bg,
-    enable_anime_seg,
-    enable_realesrgan,
-    realesrgan_device,
-    realesrgan_model,
-    enable_gfpgan,
-    gfpgan_device,
-    enable_restoreformer,
-    restoreformer_device,
+        host,
+        port,
+        model,
+        model_dir,
+        no_half,
+        low_mem,
+        cpu_offload,
+        disable_nsfw_checker,
+        local_files_only,
+        cpu_textencoder,
+        device,
+        input,
+        output_dir,
+        quality,
+        enable_interactive_seg,
+        interactive_seg_model,
+        interactive_seg_device,
+        enable_remove_bg,
+        remove_bg_model,
+        enable_anime_seg,
+        enable_realesrgan,
+        realesrgan_device,
+        realesrgan_model,
+        enable_gfpgan,
+        gfpgan_device,
+        enable_restoreformer,
+        restoreformer_device,
+        inbrowser,
 ):
     config = WebConfig(**locals())
     if str(config.input) == ".":
         config.input = None
     if str(config.output_dir) == ".":
         config.output_dir = None
-
+    config.model = config.model.strip()
     print(config.model_dump_json(indent=4))
     if config.input and not os.path.exists(config.input):
         return "[Error] Input file or directory does not exist"
@@ -75,11 +128,16 @@ def save_config(
     return msg
 
 
+def change_current_model(new_model):
+    return new_model
+
+
 def main(config_file: Path):
     global _config_file
     _config_file = config_file
 
     init_config = load_config(config_file)
+    downloaded_models = [it.name for it in scan_models()]
 
     with gr.Blocks() as demo:
         with gr.Row():
@@ -94,12 +152,23 @@ def main(config_file: Path):
                 with gr.Row():
                     host = gr.Textbox(init_config.host, label="Host")
                     port = gr.Number(init_config.port, label="Port", precision=0)
+                    inbrowser = gr.Checkbox(init_config.inbrowser, label=INBROWSER_HELP)
 
-                model = gr.Radio(
-                    AVAILABLE_MODELS + DIFFUSION_MODELS,
-                    label="Models (https://www.iopaint.com/models)",
-                    value=init_config.model,
-                )
+                with gr.Row():
+                    recommend_model = gr.Dropdown(
+                        ["lama", "mat", "migan"] + DIFFUSION_MODELS,
+                        label="Recommended Models",
+                    )
+                    downloaded_model = gr.Dropdown(
+                        downloaded_models, label="Downloaded Models"
+                    )
+                with gr.Column():
+                    model = gr.Textbox(
+                        init_config.model,
+                        label="Current Model. Model will be automatically downloaded. "
+                              "You can select a model in Recommended Models or Downloaded Models or manually enter the SD/SDXL model ID from HuggingFace, for example, runwayml/stable-diffusion-inpainting.",
+                    )
+
                 device = gr.Radio(
                     Device.values(), label="Device", value=init_config.device
                 )
@@ -158,6 +227,11 @@ def main(config_file: Path):
                     enable_remove_bg = gr.Checkbox(
                         init_config.enable_remove_bg, label=REMOVE_BG_HELP
                     )
+                    remove_bg_model = gr.Radio(
+                        RemoveBGModel.values(),
+                        label="Remove bg model",
+                        value=init_config.remove_bg_model,
+                    )
                 with gr.Row():
                     enable_anime_seg = gr.Checkbox(
                         init_config.enable_anime_seg, label=ANIMESEG_HELP
@@ -196,6 +270,9 @@ def main(config_file: Path):
                         value=init_config.restoreformer_device,
                     )
 
+        downloaded_model.change(change_current_model, [downloaded_model], model)
+        recommend_model.change(change_current_model, [recommend_model], model)
+
         save_btn.click(
             save_config,
             [
@@ -217,6 +294,7 @@ def main(config_file: Path):
                 interactive_seg_model,
                 interactive_seg_device,
                 enable_remove_bg,
+                remove_bg_model,
                 enable_anime_seg,
                 enable_realesrgan,
                 realesrgan_device,
@@ -225,6 +303,7 @@ def main(config_file: Path):
                 gfpgan_device,
                 enable_restoreformer,
                 restoreformer_device,
+                inbrowser,
             ],
             message,
         )

@@ -24,6 +24,7 @@ import {
   BRUSH_COLOR,
   DEFAULT_BRUSH_SIZE,
   DEFAULT_NEGATIVE_PROMPT,
+  MAX_BRUSH_SIZE,
   MODEL_TYPE_INPAINT,
   PAINT_BY_EXAMPLE,
 } from "./const"
@@ -166,6 +167,8 @@ type AppAction = {
   setIsInpainting: (newValue: boolean) => void
   getIsProcessing: () => boolean
   setBaseBrushSize: (newValue: number) => void
+  decreaseBaseBrushSize: () => void
+  increaseBaseBrushSize: () => void
   getBrushSize: () => number
   setImageSize: (width: number, height: number) => void
 
@@ -282,13 +285,20 @@ const defaultValues: AppState = {
   },
   serverConfig: {
     plugins: [],
+    modelInfos: [],
+    removeBGModel: "briaai/RMBG-1.4",
+    removeBGModels: [],
+    realesrganModel: "realesr-general-x4v3",
+    realesrganModels: [],
+    interactiveSegModel: "vit_b",
+    interactiveSegModels: [],
     enableFileManager: false,
     enableAutoSaving: false,
     enableControlnet: false,
     controlnetMethod: "lllyasviel/control_v11p_sd15_canny",
     disableModelSwitch: false,
     isDesktop: false,
-    samplers: ["DPM++ 2M"],
+    samplers: ["DPM++ 2M SDE Karras"],
   },
   settings: {
     model: {
@@ -321,7 +331,7 @@ const defaultValues: AppState = {
     negativePrompt: DEFAULT_NEGATIVE_PROMPT,
     seed: 42,
     seedFixed: false,
-    sdMaskBlur: 35,
+    sdMaskBlur: 12,
     sdStrength: 1.0,
     sdSteps: 50,
     sdGuidanceScale: 7.5,
@@ -486,7 +496,8 @@ export const useStore = createWithEqualityFn<AppState & AppAction>()(
           imageWidth,
           imageHeight,
           [maskLineGroup],
-          maskImages
+          maskImages,
+          BRUSH_COLOR
         )
         if (useLastLineGroup) {
           const temporaryMask = await canvasToImage(maskCanvas)
@@ -879,6 +890,24 @@ export const useStore = createWithEqualityFn<AppState & AppAction>()(
         set((state) => {
           state.editorState.baseBrushSize = newValue
         }),
+
+      decreaseBaseBrushSize: () => {
+        const baseBrushSize = get().editorState.baseBrushSize
+        let newBrushSize = baseBrushSize
+        if (baseBrushSize > 10) {
+          newBrushSize = baseBrushSize - 10
+        }
+        if (baseBrushSize <= 10 && baseBrushSize > 0) {
+          newBrushSize = baseBrushSize - 3
+        }
+        get().setBaseBrushSize(newBrushSize)
+      },
+
+      increaseBaseBrushSize: () => {
+        const baseBrushSize = get().editorState.baseBrushSize
+        const newBrushSize = Math.min(baseBrushSize + 10, MAX_BRUSH_SIZE)
+        get().setBaseBrushSize(newBrushSize)
+      },
 
       setImageSize: (width: number, height: number) => {
         // 根据图片尺寸调整 brushSize 的 scale

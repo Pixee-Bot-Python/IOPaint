@@ -5,11 +5,11 @@ import sys
 from pathlib import Path
 
 import packaging.version
+from iopaint.schema import Device
 from loguru import logger
 from rich import print
 from typing import Dict, Any
 
-from iopaint.const import Device
 
 _PY_VERSION: str = sys.version.split()[0].rstrip("+")
 
@@ -79,6 +79,7 @@ def check_device(device: Device) -> Device:
 
 def setup_model_dir(model_dir: Path):
     model_dir = model_dir.expanduser().absolute()
+    logger.info(f"Model directory: {model_dir}")
     os.environ["U2NET_HOME"] = str(model_dir)
     os.environ["XDG_CACHE_HOME"] = str(model_dir)
     if not model_dir.exists():

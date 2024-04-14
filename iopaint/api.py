@@ -42,10 +42,10 @@ from iopaint.helper import (
     adjust_mask,
 )
 from iopaint.model.utils import torch_gc
-from iopaint.model_info import ModelInfo
 from iopaint.model_manager import ModelManager
-from iopaint.plugins import build_plugins
+from iopaint.plugins import build_plugins, RealESRGANUpscaler, InteractiveSeg
 from iopaint.plugins.base_plugin import BasePlugin
+from iopaint.plugins.remove_bg import RemoveBG
 from iopaint.schema import (
     GenInfoResponse,
     ApiConfig,
@@ -56,6 +56,11 @@ from iopaint.schema import (
     SDSampler,
     PluginInfo,
     AdjustMaskRequest,
+    RemoveBGModel,
+    SwitchPluginModelRequest,
+    ModelInfo,
+    InteractiveSegModel,
+    RealESRGANModel,
 )
 
 CURRENT_DIR = Path(__file__).parent.absolute().resolve()
@@ -122,6 +127,7 @@ def api_middleware(app: FastAPI):
         "allow_headers": ["*"],
         "allow_origins": ["*"],
         "allow_credentials": True,
+        "expose_headers": ["X-Seed"]
     }
     app.add_middleware(CORSMiddleware, **cors_options)
 
@@ -154,15 +160,16 @@ class Api:
         # fmt: off
         self.add_api_route("/api/v1/gen-info", self.api_geninfo, methods=["POST"], response_model=GenInfoResponse)
         self.add_api_route("/api/v1/server-config", self.api_server_config, methods=["GET"], response_model=ServerConfigResponse)
-        self.add_api_route("/api/v1/models", self.api_models, methods=["GET"], response_model=List[ModelInfo])
         self.add_api_route("/api/v1/model", self.api_current_model, methods=["GET"], response_model=ModelInfo)
         self.add_api_route("/api/v1/model", self.api_switch_model, methods=["POST"], response_model=ModelInfo)
         self.add_api_route("/api/v1/inputimage", self.api_input_image, methods=["GET"])
         self.add_api_route("/api/v1/inpaint", self.api_inpaint, methods=["POST"])
+        self.add_api_route("/api/v1/switch_plugin_model", self.api_switch_plugin_model, methods=["POST"])
         self.add_api_route("/api/v1/run_plugin_gen_mask", self.api_run_plugin_gen_mask, methods=["POST"])
         self.add_api_route("/api/v1/run_plugin_gen_image", self.api_run_plugin_gen_image, methods=["POST"])
         self.add_api_route("/api/v1/samplers", self.api_samplers, methods=["GET"])
         self.add_api_route("/api/v1/adjust_mask", self.api_adjust_mask, methods=["POST"])
+        self.add_api_route("/api/v1/save_image", self.api_save_image, methods=["POST"])
         self.app.mount("/", StaticFiles(directory=WEB_APP_DIR, html=True), name="assets")
         # fmt: on
 
@@ -175,8 +182,11 @@ class Api:
     def add_api_route(self, path: str, endpoint, **kwargs):
         return self.app.add_api_route(path, endpoint, **kwargs)
 
-    def api_models(self) -> List[ModelInfo]:
-        return self.model_manager.scan_models()
+    def api_save_image(self, file: UploadFile):
+        filename = file.filename
+        origin_image_bytes = file.file.read()
+        with open(self.config.output_dir / filename, "wb") as fw:
+            fw.write(origin_image_bytes)
 
     def api_current_model(self) -> ModelInfo:
         return self.model_manager.current_model
@@ -187,16 +197,37 @@ class Api:
         self.model_manager.switch(req.name)
         return self.model_manager.current_model
 
+    def api_switch_plugin_model(self, req: SwitchPluginModelRequest):
+        if req.plugin_name in self.plugins:
+            self.plugins[req.plugin_name].switch_model(req.model_name)
+            if req.plugin_name == RemoveBG.name:
+                self.config.remove_bg_model = req.model_name
+            if req.plugin_name == RealESRGANUpscaler.name:
+                self.config.realesrgan_model = req.model_name
+            if req.plugin_name == InteractiveSeg.name:
+                self.config.interactive_seg_model = req.model_name
+            torch_gc()
+
     def api_server_config(self) -> ServerConfigResponse:
-        return ServerConfigResponse(
-            plugins=[
+        plugins = []
+        for it in self.plugins.values():
+            plugins.append(
                 PluginInfo(
                     name=it.name,
                     support_gen_image=it.support_gen_image,
                     support_gen_mask=it.support_gen_mask,
                 )
-                for it in self.plugins.values()
-            ],
+            )
+
+        return ServerConfigResponse(
+            plugins=plugins,
+            modelInfos=self.model_manager.scan_models(),
+            removeBGModel=self.config.remove_bg_model,
+            removeBGModels=RemoveBGModel.values(),
+            realesrganModel=self.config.realesrgan_model,
+            realesrganModels=RealESRGANModel.values(),
+            interactiveSegModel=self.config.interactive_seg_model,
+            interactiveSegModels=InteractiveSegModel.values(),
             enableFileManager=self.file_manager is not None,
             enableAutoSaving=self.config.output_dir is not None,
             enableControlnet=self.model_manager.enable_controlnet,
@@ -340,6 +371,7 @@ class Api:
             self.config.interactive_seg_model,
             self.config.interactive_seg_device,
             self.config.enable_remove_bg,
+            self.config.remove_bg_model,
             self.config.enable_anime_seg,
             self.config.enable_realesrgan,
             self.config.realesrgan_device,
@@ -363,38 +395,3 @@ class Api:
             cpu_offload=self.config.cpu_offload,
             callback=diffuser_callback,
         )
-
-
-if __name__ == "__main__":
-    from iopaint.schema import InteractiveSegModel, RealESRGANModel
-
-    app = FastAPI()
-    api = Api(
-        app,
-        ApiConfig(
-            host="127.0.0.1",
-            port=8080,
-            model="lama",
-            no_half=False,
-            cpu_offload=False,
-            disable_nsfw_checker=False,
-            cpu_textencoder=False,
-            device="cpu",
-            input="/Users/cwq/code/github/MI-GAN/examples/places2_512_object/images",
-            output_dir="/Users/cwq/code/github/lama-cleaner/tmp",
-            quality=100,
-            enable_interactive_seg=False,
-            interactive_seg_model=InteractiveSegModel.vit_b,
-            interactive_seg_device="cpu",
-            enable_remove_bg=False,
-            enable_anime_seg=False,
-            enable_realesrgan=False,
-            realesrgan_device="cpu",
-            realesrgan_model=RealESRGANModel.realesr_general_x4v3,
-            enable_gfpgan=False,
-            gfpgan_device="cpu",
-            enable_restoreformer=False,
-            restoreformer_device="cpu",
-        ),
-    )
-    api.launch()
