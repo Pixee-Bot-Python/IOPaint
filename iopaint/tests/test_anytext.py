@@ -39,7 +39,7 @@ def test_anytext(device):
     assert_equal(
         model,
         cfg,
-        f"anytext.png",
+        "anytext.png",
         img_p=current_dir / "anytext_ref.jpg",
         mask_p=current_dir / "anytext_mask.jpg",
     )

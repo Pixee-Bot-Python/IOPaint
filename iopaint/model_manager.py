@@ -155,7 +155,7 @@ class ModelManager:
                 **self.kwargs,
             )
             if not config.enable_controlnet:
-                logger.info(f"Disable controlnet")
+                logger.info("Disable controlnet")
             else:
                 logger.info(f"Enable controlnet: {config.controlnet_method}")
 
