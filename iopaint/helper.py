@@ -307,9 +307,7 @@ def get_image_ext(img_bytes):
 def decode_base64_to_image(
     encoding: str, gray=False
 ) -> Tuple[np.array, Optional[np.array], Dict]:
-    if encoding.startswith("data:image/") or encoding.startswith(
-        "data:application/octet-stream;base64,"
-    ):
+    if encoding.startswith(("data:image/", "data:application/octet-stream;base64,")):
         encoding = encoding.split(";")[1].split(",")[1]
     image = Image.open(io.BytesIO(base64.b64decode(encoding)))
 
