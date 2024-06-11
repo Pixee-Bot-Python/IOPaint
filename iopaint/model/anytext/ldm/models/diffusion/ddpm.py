@@ -1032,7 +1032,7 @@ class LatentDiffusion(DDPM):
             else:
                 xc = x
             if not self.cond_stage_trainable or force_c_encode:
-                if isinstance(xc, dict) or isinstance(xc, list):
+                if isinstance(xc, (dict, list)):
                     c = self.get_learned_conditioning(xc)
                 else:
                     c = self.get_learned_conditioning(xc.to(self.device))
@@ -1478,7 +1478,7 @@ class LatentDiffusion(DDPM):
             xc = null_label
             if isinstance(xc, ListConfig):
                 xc = list(xc)
-            if isinstance(xc, dict) or isinstance(xc, list):
+            if isinstance(xc, (dict, list)):
                 c = self.get_learned_conditioning(xc)
             else:
                 if hasattr(xc, "to"):
