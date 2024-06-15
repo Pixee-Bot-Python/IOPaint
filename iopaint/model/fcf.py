@@ -1,5 +1,4 @@
 import os
-import random
 
 import cv2
 import torch
@@ -34,6 +33,7 @@ from .utils import (
     normalize_2nd_moment,
     downsample2d,
 )
+import secrets
 
 
 def upfirdn2d(x, f, up=1, down=1, padding=0, flip_filter=False, gain=1, impl="cuda"):
@@ -1630,7 +1630,7 @@ class FcF(InpaintModel):
 
     def init_model(self, device, **kwargs):
         seed = 0
-        random.seed(seed)
+        secrets.SystemRandom().seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
