@@ -1,11 +1,11 @@
 import torch
 import torch.nn as nn
 import copy
-import random
 from typing import Any, List, Optional, Union
 from transformers import CLIPTokenizer
 
 from iopaint.schema import PowerPaintTask
+import secrets
 
 
 def add_task_to_prompt(prompt, negative_prompt, task: PowerPaintTask):
@@ -156,7 +156,7 @@ class PowerPaintTokenizer:
                 tokens = tokens[: 1 + int(len(tokens) * prop_tokens_to_load)]
                 if vector_shuffle:
                     tokens = copy.copy(tokens)
-                    random.shuffle(tokens)
+                    secrets.SystemRandom().shuffle(tokens)
                 text = text.replace(placeholder_token, " ".join(tokens))
         return text
 
