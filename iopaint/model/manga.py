@@ -1,5 +1,4 @@
 import os
-import random
 
 import cv2
 import numpy as np
@@ -10,6 +9,7 @@ from loguru import logger
 from iopaint.helper import get_cache_path_by_url, load_jit_model, download_model
 from .base import InpaintModel
 from iopaint.schema import InpaintRequest
+import secrets
 
 
 MANGA_INPAINTOR_MODEL_URL = os.environ.get(
@@ -63,7 +63,7 @@ class Manga(InpaintModel):
         return: BGR IMAGE
         """
         seed = self.seed
-        random.seed(seed)
+        secrets.SystemRandom().seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)

@@ -1,4 +1,3 @@
-import random
 from enum import Enum
 from pathlib import Path
 from typing import Optional, Literal, List
@@ -14,6 +13,7 @@ from iopaint.const import (
 )
 from loguru import logger
 from pydantic import BaseModel, Field, field_validator, computed_field
+import secrets
 
 
 class ModelType(str, Enum):
@@ -384,7 +384,7 @@ class InpaintRequest(BaseModel):
     @classmethod
     def sd_seed_validator(cls, v: int) -> int:
         if v == -1:
-            return random.randint(1, 99999999)
+            return secrets.SystemRandom().randint(1, 99999999)
         return v
 
     @field_validator("controlnet_conditioning_scale")
